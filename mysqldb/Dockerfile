@@ -1,5 +1,11 @@
-FROM stackbrew/ubuntu:12.04
-MAINTAINER Cristiano <dabduster@gmail.com>
+FROM phusion/baseimage:latest
+MAINTAINER Cristiano <cristiano@eboox.it>
+
+ENV HOME /root
+
+RUN /etc/my_init.d/00_regen_ssh_host_keys.sh
+
+CMD ["/sbin/my_init"]
 
 RUN apt-get update -qq && apt-get install -y mysql-server-5.5
 
@@ -16,3 +22,6 @@ RUN chmod +x /usr/local/bin/run.sh
 
 EXPOSE 3306
 ENTRYPOINT ["/usr/local/bin/run.sh"]
+
+# Clean up APT when done.
+RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
