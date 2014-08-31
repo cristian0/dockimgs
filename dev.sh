@@ -11,11 +11,7 @@ redis_image='cristian0/redis'
 mysql_image='cristian0/mysql' 
 magento_image='cristian0/webapp'
 
-createvol(){
-	docker run -v /var/lib/mysql --name DBDATA busybox true
-}
-
-start(){
+run(){
 
 	MYSQL=$(docker run \
 		-d \
@@ -45,48 +41,57 @@ start(){
 		--link $mysql_name:db \
 		--link $redis_name:redis \
 		-v /home/cristiano/dev/app:/var/www \
-		$magento_image)
+		-v /home/cristiano/dev/docker/logs/webapp:/var/log/nginx \
+		$magento_image \
+		/sbin/my_init --enable-insecure-key)
 	echo "Started MAGENTOAPP in container $WEBAPP"
 
 	docker inspect --format '{{.Name}}: {{ .NetworkSettings.IPAddress }}' $(docker ps -q)
 
 }
 
+start(){
+	echo "Start running containers:"
+	docker start $mysql_name $redis_name $magento_name
+	echo "Started containers:"
+	docker inspect --format '{{.Name}}: {{ .NetworkSettings.IPAddress }}' $(docker ps -q)
+}
+
 stop(){
-	echo "Stop and remove running containers:"
+	echo "Stop running containers:"
 	docker stop $magento_name $mysql_name $redis_name
-	docker rm $magento_name $mysql_name $redis_name
-	echo "Stopped!"
+	echo "OK!"
 }
-
-stopall(){
-	docker stop $(docker ps -a -q)
-}
-
-#rmall(){
-#	docker rm $(docker ps -a -q)
-#}
 
 rm(){
-	docker rm $(docker ps -a | grep -v "DBDATA" | awk '{print $1}')
+	echo "Removing containers:"
+	docker rm $magento_name $mysql_name $redis_name
+	echo "OK!"
 }
 
 rmiuntagged(){
 	docker rmi $(docker images | grep "^<none>" | awk '{print $3}')
 }
 
-killz(){
-	echo "Killing all docker containers:"
-	docker ps
-	ids=`docker ps | tail -n +2 |cut -d ' ' -f 1`
-	echo $ids | xargs docker kill
-	echo $ids | xargs docker rm
+createvol(){
+	docker run -v /var/lib/mysql --name DBDATA busybox true
 }
 
+ipaddress(){
+	docker inspect --format '{{.Name}}: {{ .NetworkSettings.IPAddress }}' $(docker ps -q)
+}
+
+
+
+
+#rm(){
+#	docker rm $(docker ps -a | grep -v "DBDATA" | awk '{print $1}')
+#}
+
+
 case "$1" in
-	restart)
-		stop
-		start
+	run)
+		run
 		;;
 	start)
 		start
@@ -94,28 +99,19 @@ case "$1" in
 	stop)
 		stop
 		;;
-	stopall)
-		stopall
-		;;
-	kill)
-		killz
-		;;
-	createvol)
-		createvol
-		;;
-	status)
-		docker ps
+	rm)
+		rm
 		;;
 	rmiuntagged)
 		rmiuntagged
 		;;
-	rm)
-		rm
+	createvol)
+		createvol
 		;;
-	rmall)
-		rmall
+	ipaddress)
+		ipaddress
 		;;
 	*)
-		echo $"Usage: $0 {start|stopall|stop|restart|status|createvol}"
+		echo "Usage: $0 {run|start|stop|rm|rmiuntagged|createvol|ipaddress}"
 		RETVAL=1
 esac
