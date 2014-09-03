@@ -81,7 +81,11 @@ ipaddress(){
 	docker inspect --format '{{.Name}}: {{ .NetworkSettings.IPAddress }}' $(docker ps -q)
 }
 
-
+sshin(){
+	IPADDRESS=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' $1)
+	echo "Ssh into $IPADDRESS:"
+	ssh -i ssh/insecure_key root@$IPADDRESS
+}
 
 
 #rm(){
@@ -111,7 +115,10 @@ case "$1" in
 	ipaddress)
 		ipaddress
 		;;
+	ssh)
+		sshin $2
+		;;
 	*)
-		echo "Usage: $0 {run|start|stop|rm|rmiuntagged|createvol|ipaddress}"
+		echo "Usage: $0 {run|start|stop|rm|rmiuntagged|createvol|ipaddress|ssh nomecontainer}"
 		RETVAL=1
 esac
