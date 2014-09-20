@@ -41,7 +41,7 @@ run(){
 		--link $mysql_name:db \
 		--link $redis_name:redis \
 		-v /home/cristiano/dev/app:/var/www \
-		-v /home/cristiano/dev/docker/logs/webapp:/var/log/nginx \
+		-v /home/cristiano/dev/docker/log/webapp:/var/log/nginx \
 		$magento_image \
 		/sbin/my_init --enable-insecure-key)
 	echo "Started MAGENTOAPP in container $WEBAPP"
