@@ -1,15 +1,23 @@
 #/bin/bash
 # originale: https://raw.githubusercontent.com/relateiq/docker_public/master/bin/devenv-inner.sh
 
+MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+
 set -e
 
 mysql_name='mysql-server'
 redis_name='redis-server'
-magento_name='magento-app'
+web_name='web-app'
 
 redis_image='cristian0/redis' 
 mysql_image='cristian0/mysql' 
-magento_image='cristian0/webapp'
+web_image='cristian0/webapp'
+
+
+install(){
+	echo "Install ddd.sh in ~/bin/"
+	ln -s $MY_PATH/ddd.sh ~/bin/ddd
+}
 
 run(){
 
@@ -20,7 +28,7 @@ run(){
 		--volumes-from DBDATA \
 		--name $mysql_name \
 		$mysql_image)
-	echo "Started MYSQL in container $MYSQL"
+	echo "Started Mysql in container $MYSQL"
 
 	REDIS=$(docker run \
 		-d \
@@ -28,7 +36,7 @@ run(){
 		-p 6379:6379 \
 		--name $redis_name \
 		$redis_image)
-	echo "Started REDIS in container $REDIS"
+	echo "Started Redis in container $REDIS"
 
 	sleep 1
 
@@ -37,14 +45,14 @@ run(){
 		-t \
 		-p 22 \
 		-p 80:80 \
-		--name $magento_name \
+		--name $web_name \
 		--link $mysql_name:db \
 		--link $redis_name:redis \
 		-v /home/cristiano/dev/app:/var/www \
 		-v /home/cristiano/dev/docker/log/webapp:/var/log/nginx \
-		$magento_image \
+		$web_image \
 		/sbin/my_init --enable-insecure-key)
-	echo "Started MAGENTOAPP in container $WEBAPP"
+	echo "Started Webapp in container $WEBAPP"
 
 	docker inspect --format '{{.Name}}: {{ .NetworkSettings.IPAddress }}' $(docker ps -q)
 
@@ -52,20 +60,20 @@ run(){
 
 start(){
 	echo "Start running containers:"
-	docker start $mysql_name $redis_name $magento_name
+	docker start $mysql_name $redis_name $web_name
 	echo "Started containers:"
 	docker inspect --format '{{.Name}}: {{ .NetworkSettings.IPAddress }}' $(docker ps -q)
 }
 
 stop(){
 	echo "Stop running containers:"
-	docker stop $magento_name $mysql_name $redis_name
+	docker stop $web_name $mysql_name $redis_name
 	echo "OK!"
 }
 
 rm(){
 	echo "Removing containers:"
-	docker rm $magento_name $mysql_name $redis_name
+	docker rm $web_name $mysql_name $redis_name
 	echo "OK!"
 }
 
@@ -117,6 +125,9 @@ case "$1" in
 		;;
 	ssh)
 		sshin $2
+		;;
+	install)
+		install
 		;;
 	*)
 		echo "Usage: $0 {run|start|stop|rm|rmiuntagged|createvol|ipaddress|ssh nomecontainer}"
