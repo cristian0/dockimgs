@@ -5,9 +5,9 @@ MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
 
 set -e
 
-mysql_name='mysql-server'
-redis_name='redis-server'
-memcache_name='memcache-server'
+mysql_name='mysql-service'
+redis_name='redis-service'
+memcache_name='memcache-service'
 web_name='web-app'
 
 redis_image='cristian0/redis' 
