@@ -7,10 +7,12 @@ set -e
 
 mysql_name='mysql-server'
 redis_name='redis-server'
+memcache_name='memcache-server'
 web_name='web-app'
 
 redis_image='cristian0/redis' 
-mysql_image='cristian0/mysql' 
+mysql_image='cristian0/mysql'
+memcache_image='cristian0/memcache' 
 web_image='cristian0/webapp'
 
 
@@ -29,6 +31,14 @@ run(){
 		--name $mysql_name \
 		$mysql_image)
 	echo "Started Mysql in container $MYSQL"
+
+	MEMCACHE=$(docker run \
+		-d \
+		-t \
+		-p 11211:11211 \
+		--name $memcache_name \
+		$memcache_image)
+	echo "Started Memcache in container $MEMCACHE"
 
 	REDIS=$(docker run \
 		-d \
@@ -60,20 +70,20 @@ run(){
 
 start(){
 	echo "Start running containers:"
-	docker start $mysql_name $redis_name $web_name
+	docker start $mysql_name $memcache_name $redis_name $web_name
 	echo "Started containers:"
 	docker inspect --format '{{.Name}}: {{ .NetworkSettings.IPAddress }}' $(docker ps -q)
 }
 
 stop(){
 	echo "Stop running containers:"
-	docker stop $web_name $mysql_name $redis_name
+	docker stop $web_name $mysql_name $memcache_name $redis_name
 	echo "OK!"
 }
 
 rm(){
 	echo "Removing containers:"
-	docker rm $web_name $mysql_name $redis_name
+	docker rm $web_name $mysql_name $memcache_name $redis_name
 	echo "OK!"
 }
 
