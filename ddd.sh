@@ -1,7 +1,8 @@
 #/bin/bash
 # originale: https://raw.githubusercontent.com/relateiq/docker_public/master/bin/devenv-inner.sh
 
-MY_PATH="`( cd \"$MY_PATH\" && pwd )`"  # absolutized and normalized
+sourcefile=$(readlink -f `which $0`)
+DDD_PATH="$(dirname "$sourcefile")"
 
 set -e
 
@@ -17,8 +18,8 @@ web_image='cristian0/webapp'
 
 
 install(){
-	echo "Install ddd.sh in ~/bin/"
-	ln -s $MY_PATH/ddd.sh ~/bin/ddd
+	echo "Install $DDD_PATH/ddd.sh in ~/bin/"
+	ln -s $DDD_PATH/ddd.sh ~/bin/ddd
 }
 
 run(){
@@ -58,6 +59,7 @@ run(){
 		--name $web_name \
 		--link $mysql_name:db \
 		--link $redis_name:redis \
+		--link $memcache_name:memcache \
 		-v /home/cristiano/dev/app:/var/www \
 		-v /home/cristiano/dev/docker/log/webapp:/var/log/nginx \
 		$web_image \
@@ -102,7 +104,7 @@ ipaddress(){
 sshin(){
 	IPADDRESS=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' $1)
 	echo "Ssh into $IPADDRESS:"
-	ssh -i ssh/insecure_key root@$IPADDRESS
+	ssh -o "StrictHostKeyChecking no" -i $DDD_PATH/ssh/insecure_key root@$IPADDRESS
 }
 
 

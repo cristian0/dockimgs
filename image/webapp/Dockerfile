@@ -33,6 +33,7 @@ RUN mkdir           /etc/service/phpfpm
 ADD build/phpfpm.sh /etc/service/phpfpm/run
 RUN chmod +x        /etc/service/phpfpm/run
 
+
 # Expose the port
 EXPOSE 80 22
 

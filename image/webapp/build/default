@@ -1,23 +1,104 @@
 server {
+
     listen 80 default_server;
     listen [::]:80 default_server ipv6only=on;
 
     root /var/www;
-    index index.php
 
-    # Make site accessible from http://localhost/
-    server_name localhost;
+	## This should be in your http block and if it is, it's not needed here.
+	index index.html index.htm index.php;
 
-    location / {
-        try_files $uri $uri/ /index.php /index.html;
+	location / {
+#		try_files $uri $uri/ /index.php?q=$uri&$args;
+
+	index index.html index.php; ## Allow a static html file to be shown first
+	try_files $uri $uri/ @handler; ## If missing pass the URI to Magento's front handler
+		expires 30d; ## Assume all files are cachable
+	}
+
+    location ~ ^/ping$ {
+		fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_pass unix:/var/run/php5-fpm.sock;
     }
 
     location ~ \.php$ {
-        fastcgi_split_path_info ^(.+\.php)(/.+)$;
-        # NOTE: You should have "cgi.fix_pathinfo = 0;" in php.ini
-
+		fastcgi_buffers 8 256k;
+		fastcgi_buffer_size 128k;
+		fastcgi_intercept_errors on;
+		include fastcgi_params;
+		fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
         fastcgi_pass unix:/var/run/php5-fpm.sock;
-        fastcgi_index index.php;
-        include fastcgi_params;
-    }
+		fastcgi_param  HTTPS    $my_https;
+	}
+
+	## Execute PHP scripts
+#	location ~ .php$ { 
+		
+#		## Catch 404s that try_files miss
+#		if (!-e $request_filename) {
+#			rewrite / /index.php last; 
+#		} 
+#
+#		expires        off; ## Do not cache dynamic content
+#		fastcgi_pass   127.0.0.1:9000;
+#		fastcgi_param  HTTPS $fastcgi_https;
+#		fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+#		fastcgi_param  MAGE_RUN_CODE default; ## Store code is defined in administration > Configuration > Manage Stores
+#		fastcgi_param  MAGE_RUN_TYPE store;
+#		include        fastcgi_params; ## See /etc/nginx/fastcgi_params
+#	}
+
+	set $my_https "off";
+	if ($http_x_forwarded_proto = "https") {
+		set $my_https "on";
+	}
+
+	## MAGENTO STUFF
+    ## These locations would be hidden by .htaccess normally
+    location ^~ /includes/           { deny all; }
+    location ^~ /media/downloadable/ { deny all; }
+    location ^~ /pkginfo/            { deny all; }
+    location ^~ /report/config.xml   { deny all; }
+    location ^~ /var/                { deny all; }
+
+	location /var/export/ { ## Allow admins only to view export folder
+		auth_basic           "Restricted"; ## Message shown in login window
+		auth_basic_user_file htpasswd; ## See /etc/nginx/htpassword
+		autoindex            on;
+	}
+
+	location  /. { ## Disable .htaccess and other hidden files
+		return 404;
+	}
+
+	location @handler { ## Magento uses a common front handler
+		rewrite / /index.php;
+	}
+
+	location ~ .php/ { ## Forward paths like /js/index.php/x.js to relevant handler
+		rewrite ^(.*.php)/ $1 last;
+	}
+
+	# Favicon
+		location ~* \.ico$ {
+		expires 1w;
+		access_log off;
+		add_header Cache-Control "public";
+	}
+
+	# Media: images, video, audio, HTC
+	location ~* \.(?:jpg|jpeg|gif|png|ico|gz|svg|svgz|mp4|ogg|ogv|webm)$ {
+		expires 1M;
+		access_log off;
+		add_header Cache-Control "public";
+	}
+
+	# WebFonts
+	# If you are NOT using cross-domain-fonts.conf, uncomment the following directive
+	location ~* \.(ttf|ttc|otf|eot|woff|font.css)$ {
+		expires 1M;
+		access_log off;
+		add_header Cache-Control "public";
+	}
+
 }
