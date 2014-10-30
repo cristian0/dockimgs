@@ -17,6 +17,9 @@ memcache_image='cristian0/memcache'
 web_image='cristian0/webapp'
 
 
+sudo chgrp $(groups |cut -d' ' -f1) /var/run/docker.sock
+
+
 install(){
 	echo "Install $DDD_PATH/ddd.sh in ~/bin/"
 	ln -s $DDD_PATH/ddd.sh ~/bin/ddd
